@@ -5,6 +5,7 @@ class GF2n:
         self.n = len(bin(poly))-2-1
         self.p = poly
         self.val = val #should be reduced by p
+        self.log = False
 
     def __repr__(self):
         return 'GF2n(0x{:x}, 0x{:x})'.format(self.p, self.val)
@@ -84,19 +85,40 @@ class GF2n:
         
 
     def __pow__(self, other):
-        ''' exponentiation 
+        ''' Exponentiation 
         >>> GF2n(0x11b, 3) ** 2 == GF2n(0x11b, 5)
         True
         '''
         if not isinstance(other, int):
             return NotImplemented
-        
-        r = GF2n(self.p, 1)
-        p = self * 1
-        while other:
-            if other & 1:
-                r *= p
-            p = p * p
-            other >>= 1
 
-        return r
+        #bit scanning implementation
+        # r = GF2n(self.p, 1)
+        # p = self * 1
+        # while other:
+        #     if other & 1:
+        #         r *= p
+        #     p = p * p
+        #     other >>= 1
+        # return r
+
+        #montgomery ladder implementation
+        x0 = GF2n(self.p, 1)
+        x1 = GF2n(self.p, self.val)
+        for kj in bin(other)[2:]:
+            if kj == '0':
+                x1 = x0 * x1
+                x0 = x0 * x0
+            else:
+                x0 = x0 * x1
+                x1 = x1 * x1
+            if self.log: print "x0={}\tx1={}".format(x0,x1)
+        return x0
+    
+
+    
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
