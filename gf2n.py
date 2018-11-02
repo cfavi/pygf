@@ -64,6 +64,15 @@ class GF2n:
         if not isinstance(b, GF2n):
             b = GF2n(self.p, b)
         return GF2n(self.p, self.val ^ b.val)
+    
+    def __sub__(self, b):
+        ''' Addition in Galois Field is XOR
+        >>> a = GF2n(0x11b, 3) 
+        >>> b = GF2n(0x11b, 1)
+        >>> b - a == GF2n(0x11b, 2)
+        True
+        '''
+        return self.__add__(b)
 
 
     def __mul__(self, b):
