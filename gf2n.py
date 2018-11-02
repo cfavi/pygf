@@ -1,15 +1,25 @@
-
+import math
 
 class GF2n:
     '''
     Model GF(2**n) elements.
 
     Objects of this class act as elements of GF(2**n). 
+
+    >>> GF2n(0x11b, b'\\x11\\xb0\\x00\\x01') == GF2n(0x11b, 1)
+    True
     '''
     def __init__(self, poly, val=0):
-        self.n = len(bin(poly))-2-1
-        self.p = poly
-        self.val = val
+        if isinstance(poly, (bytes, bytearray)):
+            self.p = int.from_bytes(poly, byteorder='big')
+        else:
+            self.p = poly
+        self.n = self.p.bit_length() - 1 # len(bin(poly))-2-1
+
+        if isinstance(val, (bytes, bytearray)):
+            self.val = int.from_bytes(val, byteorder='big')
+        else:
+            self.val = val
         self._reduce_modp()
         self.log = False
 
@@ -42,7 +52,7 @@ class GF2n:
         if isinstance(b, GF2n):
             return (self.val == b.val) and (self.p == b.p)
         else:
-            return self.val == b  # TODO: should be reduced by p
+            return self == GF2n(self.p, b)
 
     def __add__(self, b):
         ''' Addition in Galois Field is XOR
@@ -121,7 +131,17 @@ class GF2n:
             if self.log: print("x0={}\tx1={}".format(x0,x1))
         return x0
     
+    def __bytes__(self):
+        '''Create a serialized bytes string of the value (and not the poly)
 
+        The byte string is MSBf coded on math.ceil(self.n/8) bytes
+        >>> bytes(GF2n(0x11b, 5)) 
+        b'\\x05'
+        >>> bytes(GF2n(0x1277, 5))
+        b'\\x00\\x05'
+        '''
+        return self.val.to_bytes(math.ceil(self.n/8), byteorder='big')
+        
     def _reduce_modp(self):
         '''Reduce self.val by self.p so that the new value is < 2**self.n
 
@@ -136,7 +156,7 @@ class GF2n:
             return  # Do nothing
 
         while self.val >= 2**self.n:
-            valn = len(bin(self.val))-2-1
+            valn = self.val.bit_length() - 1  # len(bin(self.val))-2-1
             self.val ^= self.p << (valn - self.n)
         
 
