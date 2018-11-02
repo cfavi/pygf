@@ -1,10 +1,16 @@
 
 
 class GF2n:
+    '''
+    Model GF(2**n) elements.
+
+    Objects of this class act as elements of GF(2**n). 
+    '''
     def __init__(self, poly, val=0):
         self.n = len(bin(poly))-2-1
         self.p = poly
-        self.val = val #should be reduced by p
+        self.val = val
+        self._reduce_modp()
         self.log = False
 
     def __repr__(self):
@@ -12,9 +18,9 @@ class GF2n:
 
     def __str__(self):
         ''' Polynomial representation
-        >>> print GF2n(0x11b, 3)
+        >>> print(GF2n(0x11b, 3))
         x + 1 (0x3)
-        >>> print GF2n(0x11b, 0x1b)
+        >>> print(GF2n(0x11b, 0x1b))
         x^4 + x^3 + x + 1 (0x1b)
         '''
         s = []
@@ -32,11 +38,11 @@ class GF2n:
         return __str
 
     def __eq__(self, b):
-        ''' redefine equality '''
+        '''Redefine equality. '''
         if isinstance(b, GF2n):
             return (self.val == b.val) and (self.p == b.p)
         else:
-            return self.val == b
+            return self.val == b  # TODO: should be reduced by p
 
     def __add__(self, b):
         ''' Addition in Galois Field is XOR
@@ -51,7 +57,7 @@ class GF2n:
 
 
     def __mul__(self, b):
-        ''' GF Multiplication dumb implementation
+        ''' GF Multiplication double and add implementation
         >>> a = GF2n(0x11b, 3)
         >>> a * a == GF2n(0x11b, 5)
         True
@@ -60,7 +66,7 @@ class GF2n:
             return GF2n(self.p, self.val)
         elif b == 2:
             t = self.val * 2
-            if t >= 2**self.n:
+            if t >= 2**self.n:  # quick reduction
                 t ^= self.p
                 
             return GF2n(self.p, t)
@@ -112,13 +118,30 @@ class GF2n:
             else:
                 x0 = x0 * x1
                 x1 = x1 * x1
-            if self.log: print "x0={}\tx1={}".format(x0,x1)
+            if self.log: print("x0={}\tx1={}".format(x0,x1))
         return x0
     
 
-    
+    def _reduce_modp(self):
+        '''Reduce self.val by self.p so that the new value is < 2**self.n
+
+        >>> GF2n(0x11b, 0x11b) == GF2n(0x11b, 0)
+        True
+        >>> GF2n(0x11b, 0x100) == GF2n(0x11b, 0x1b)
+        True
+        >>> GF2n(0x11b, 0x11b027) == GF2n(0x11b, 0x27)
+        True
+        '''
+        if self.val < 2**self.n:
+            return  # Do nothing
+
+        while self.val >= 2**self.n:
+            valn = len(bin(self.val))-2-1
+            self.val ^= self.p << (valn - self.n)
+        
 
 
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
